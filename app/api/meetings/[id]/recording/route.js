@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
     return Response.json({ enabled: false, url: null });
   }
 
-  const calendar = getCalendar();
+  const calendar = await getCalendar();
   if (!calendar) {
     return Response.json({ error: "not_connected" }, { status: 409 });
   }

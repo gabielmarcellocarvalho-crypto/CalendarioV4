@@ -15,7 +15,7 @@ function toLocalDateTime(d) {
 
 export async function DELETE(request, { params }) {
   if (!hasAccess(request)) return unauthorized();
-  const calendar = getCalendar();
+  const calendar = await getCalendar();
   if (!calendar) {
     return Response.json({ error: "not_connected" }, { status: 409 });
   }
@@ -38,7 +38,7 @@ export async function DELETE(request, { params }) {
 
 export async function PATCH(request, { params }) {
   if (!hasAccess(request)) return unauthorized();
-  const calendar = getCalendar();
+  const calendar = await getCalendar();
   if (!calendar) {
     return Response.json({ error: "not_connected" }, { status: 409 });
   }

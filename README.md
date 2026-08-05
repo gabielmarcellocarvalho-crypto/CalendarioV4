@@ -37,7 +37,7 @@ GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxx
 APP_BASE_URL=http://localhost:3000
 APP_ACCESS_CODE=v4sdr2026          # código que o SDR digita para entrar
 SDR_EMAIL=freela@gmail.com         # convidado automático em toda reunião (opcional)
-MEET_AUTO_RECORDING=false          # true para tentar gravação automática
+MEET_SHOW_RECORDINGS=false         # true para buscar o link da gravação após a call
 TIMEZONE=America/Sao_Paulo
 ```
 
@@ -55,13 +55,24 @@ O acesso é protegido pelo código definido em `APP_ACCESS_CODE` (o SDR digita u
 
 ## Sobre a gravação
 
+O Google Meet **não permite** que nenhum app de terceiros ligue a gravação automaticamente via API — isso é sempre uma ação manual de quem estiver como anfitrião/co-anfitrião dentro da call.
+
 - O **organizador** da reunião é a conta Workspace da V4, então a call tem os recursos de gravação da licença V4.
-- Para o SDR gravar manualmente: durante a call, promova-o a **co-anfitrião** (Meet → Pessoas → ⋮ → Adicionar como co-anfitrião).
-- Alternativa sem intervenção: defina `MEET_AUTO_RECORDING=true`, ative a **Meet REST API** no Cloud Console e **reconecte** a conta em `/admin`. O sistema tentará ligar a gravação automática de cada call criada — a gravação inicia sozinha e vai para o Drive da conta V4. *(Requer edição do Workspace com gravação habilitada; se a API recusar, o agendamento continua funcionando normalmente e a gravação segue manual.)*
+- Para o SDR conseguir gravar: durante a call, o organizador o promove a **co-anfitrião** (Meet → Pessoas → ⋮ → "Tornar co-anfitrião"). A partir daí ele já consegue clicar em "Gravar".
+- Depois que alguém grava, o arquivo vai automaticamente para o Google Drive da conta V4. Definindo `MEET_SHOW_RECORDINGS=true` (e ativando a **Google Meet API** no Cloud Console), o sistema passa a localizar esse link de gravação via `GET /api/meetings/[id]/recording` — sem precisar caçar o arquivo no Drive.
+
+## Publicando na Vercel
+
+O armazenamento em arquivo (`./data`) não persiste em ambiente serverless. Em produção (quando `process.env.VERCEL` está definido, ou localmente se `BLOB_READ_WRITE_TOKEN` estiver setado), os tokens OAuth passam a ser lidos/gravados num **Vercel Blob privado** automaticamente — não precisa trocar nada no código, só provisionar o Blob:
+
+1. No projeto na Vercel, vá em **Storage → Create Database → Blob**, marque **Private** e conecte ao projeto (isso injeta `BLOB_READ_WRITE_TOKEN` automaticamente nas envs).
+2. Configure as variáveis de ambiente do projeto na Vercel (mesmas do `.env.example`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_BASE_URL` (domínio de produção), `APP_ACCESS_CODE`, `SDR_EMAIL`, `MEET_SHOW_RECORDINGS`, `TIMEZONE`.
+3. No Google Cloud Console, adicione a URI de redirecionamento de produção: `https://SEU-DOMINIO.vercel.app/api/auth/callback`.
+4. Depois do deploy, abra `/admin` na URL de produção e conecte a conta Google novamente (a conexão feita localmente não é compartilhada com o Blob de produção).
 
 ## Detalhes técnicos
 
-- **Stack**: Next.js 15 (App Router) + googleapis. Sem banco de dados — os tokens OAuth ficam em `./data/google-tokens.json` (fora do git).
-- **Escopos OAuth**: `calendar.events`, `userinfo.email/profile` e, se gravação automática estiver ativa, `meetings.space.created` + `meetings.space.settings`.
+- **Stack**: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui + googleapis.
+- **Tokens OAuth**: `./data/google-tokens.json` localmente, ou Vercel Blob privado em produção (`lib/google.js`, função `useBlobStorage()`).
+- **Escopos OAuth**: `calendar.events`, `userinfo.email/profile` e, se `MEET_SHOW_RECORDINGS=true`, `meetings.space.readonly`.
 - Eventos criados recebem a marcação `extendedProperties.private.app=calendario-sdr`, usada para listar/cancelar somente o que o sistema criou.
-- Para publicar (Vercel etc.): ajuste `APP_BASE_URL`, adicione a URI de callback de produção no Cloud Console. Obs.: em plataformas serverless o armazenamento em arquivo (`./data`) não persiste — para produção, troque `lib/google.js` por um storage persistente (KV/DB) ou rode em uma VM/servidor próprio.

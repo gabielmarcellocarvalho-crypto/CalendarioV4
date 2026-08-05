@@ -18,7 +18,7 @@ export async function GET(request) {
     const { tokens } = await client.getToken(code);
 
     // Mantém o refresh_token anterior caso o Google não envie um novo
-    const previous = loadTokenStore();
+    const previous = await loadTokenStore();
     if (!tokens.refresh_token && previous?.tokens?.refresh_token) {
       tokens.refresh_token = previous.tokens.refresh_token;
     }
@@ -35,7 +35,7 @@ export async function GET(request) {
       /* e-mail é informativo; conexão continua válida */
     }
 
-    saveTokenStore({ tokens, email, name, connectedAt: new Date().toISOString() });
+    await saveTokenStore({ tokens, email, name, connectedAt: new Date().toISOString() });
     return NextResponse.redirect(new URL("/admin?conectado=1", request.url));
   } catch (err) {
     console.error("[oauth] falha na troca do código:", err?.message || err);

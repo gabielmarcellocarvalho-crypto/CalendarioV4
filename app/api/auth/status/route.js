@@ -13,10 +13,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   if (!hasAccess(request)) return unauthorized();
-  const store = loadTokenStore();
+  const store = await loadTokenStore();
   return Response.json({
     credentialsConfigured: hasCredentials(),
-    connected: isConnected(),
+    connected: await isConnected(),
     email: store?.email || null,
     name: store?.name || null,
     connectedAt: store?.connectedAt || null,

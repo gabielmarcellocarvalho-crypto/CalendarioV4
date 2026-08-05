@@ -46,7 +46,7 @@ function mapEvent(ev) {
 
 export async function GET(request) {
   if (!hasAccess(request)) return unauthorized();
-  const calendar = getCalendar();
+  const calendar = await getCalendar();
   if (!calendar) return notConnected();
 
   try {
@@ -75,7 +75,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   if (!hasAccess(request)) return unauthorized();
-  const calendar = getCalendar();
+  const calendar = await getCalendar();
   if (!calendar) return notConnected();
 
   const body = await request.json().catch(() => null);

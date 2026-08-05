@@ -5,6 +5,6 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   if (!hasAccess(request)) return unauthorized();
-  clearTokenStore();
+  await clearTokenStore();
   return Response.json({ ok: true });
 }
